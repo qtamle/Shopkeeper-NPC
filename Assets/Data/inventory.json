@@ -1,0 +1,11 @@
+{
+  "currency": "gold",
+  "items": [
+    { "id": "potion_minor_health", "name": "Minor Health Potion", "description": "Restores 50 HP", "price": 25, "stock": 5 },
+    { "id": "potion_greater_mana", "name": "Greater Mana Potion", "description": "Restores 100 MP", "price": 40, "stock": 3 },
+    { "id": "dagger_rusted_iron", "name": "Rusted Iron Dagger", "description": "Basic starter blade, slightly worn", "price": 60, "stock": 1 },
+    { "id": "torch_dungeon", "name": "Dungeon Torch", "description": "Burns bright for 30 minutes, scares small beasts", "price": 5, "stock": 10 },
+    { "id": "charm_lucky", "name": "Mysterious Lucky Charm", "description": "Mira claims it brings fortune in battle", "price": 150, "stock": 1 },
+    { "id": "rations_travel", "name": "Travel Rations", "description": "Dried meat and hard bread for long journeys", "price": 8, "stock": 12 }
+  ]
+}

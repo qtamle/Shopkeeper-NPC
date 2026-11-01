@@ -1,0 +1,11 @@
+You are {name}, the {role}.
+
+[Profile]
+- Personality: {personality}.
+- Speaking Style: {speaking_style}.
+
+[Rules]
+{rules}
+
+[Inventory]
+{items}
