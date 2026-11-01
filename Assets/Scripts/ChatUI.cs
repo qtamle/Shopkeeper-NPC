@@ -1,71 +1,101 @@
-using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 
-// Builds a minimal chat screen in code (log + input + send button) and passes questions to NpcController.
-// Pure UI: it knows nothing about prompts or the LLM.
+// Builds a visual-novel style dialogue box in code (last question, NPC name, reply, input) and passes questions to NpcController.
+// Pure UI: it knows nothing about prompts or the LLM. The full history lives in NpcController; this only shows the latest turn.
 [RequireComponent(typeof(NpcController))]
 public class ChatUI : MonoBehaviour
 {
-    const int FontSize = 28;
+    static readonly Color NameColor = new Color(0.96f, 0.89f, 0.74f);
+    static readonly Color ReplyColor = new Color(0.98f, 0.96f, 0.92f);
+    static readonly Color MutedColor = new Color(0.68f, 0.64f, 0.60f);
+    static readonly Color GoldColor = new Color(0.78f, 0.62f, 0.38f, 0.8f);
+    const string ItemColorHex = "#ffcf70";
+    const string PriceColorHex = "#9be3a8";
+
+    [Tooltip("Optional TTF font, e.g. EB Garamond. Empty = Unity's built-in font.")]
+    [SerializeField] Font font;
 
     NpcController npc;
-    Text logText;
+    Text questionText;
+    Text nameText;
+    Text replyText;
+    Text placeholderText;
     InputField inputField;
-    Button sendButton;
-    Font font;
-
-    readonly List<string> lines = new List<string>();
     bool busy;
 
     void Awake()
     {
         npc = GetComponent<NpcController>();
-        font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        if (font == null) font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         BuildUI();
     }
 
     void Start()
     {
-        AddLine($"<color=#9aa0a6>Talk to {npc.NpcName}. Type a message and press Enter.</color>");
+        // NpcController loads the persona in Awake, so the name is ready here.
+        nameText.text = npc.NpcName;
+        placeholderText.text = $"Whisper to {npc.NpcName}...";
+        ShowReply($"Talk to {npc.NpcName}.", MutedColor, FontStyle.Italic);
         inputField.ActivateInputField();
     }
 
     async void Send()
     {
         string question = inputField.text.Trim();
-        // busy: one request at a time, so a double click can't send the same question twice.
+        // busy: one request at a time, so pressing Enter twice can't send the same question twice.
         if (busy || question.Length == 0) return;
 
         busy = true;
-        sendButton.interactable = false;
         inputField.text = "";
-        AddLine($"<b><color=#8ab4f8>You:</color></b> {question}");
-        AddLine($"<i><color=#9aa0a6>{npc.NpcName} is thinking...</color></i>");
+        questionText.text = $"You: {question}";
+        ShowReply("...", MutedColor, FontStyle.Italic);
 
         NpcReply reply = await npc.AskAsync(question);
 
         // Play mode may have stopped while we were waiting for the network.
         if (this == null) return;
 
-        lines.RemoveAt(lines.Count - 1);
         // Fallback lines are greyed out only to help us spot them while testing.
-        string nameColor = reply.isFallback ? "#9aa0a6" : "#fdd663";
-        AddLine($"<b><color={nameColor}>{npc.NpcName}:</color></b> {reply.text}");
+        ShowReply(reply.text, reply.isFallback ? MutedColor : ReplyColor, FontStyle.Normal, reply.output?.mentioned_items);
 
         busy = false;
-        sendButton.interactable = true;
         inputField.ActivateInputField();
     }
 
-    void AddLine(string line)
+    void ShowReply(string text, Color color, FontStyle style, MentionedItem[] mentioned = null)
     {
-        lines.Add(line);
-        logText.text = string.Join("\n\n", lines);
+        replyText.text = Highlight(Sanitize(text), mentioned);
+        replyText.color = color;
+        replyText.fontStyle = style;
     }
+
+    // Legacy Text reads "<...>" as formatting tags. Removing '<' from the model's text means only our own tags can format it.
+    static string Sanitize(string text) => text.Replace('<', '‹');
+
+    // Highlights the items the generator listed in mentioned_items, using the name and price from inventory.json,
+    // not the model's own numbers. So only a real item at its real price lights up; a wrong price stays plain.
+    string Highlight(string text, MentionedItem[] mentioned)
+    {
+        if (mentioned == null) return text;
+
+        foreach (string id in mentioned.Select(m => m.id).Distinct())
+        {
+            Item item = npc.FindItem(id);
+            if (item == null) continue;
+            text = Wrap(text, Regex.Escape(item.name), ItemColorHex);
+            text = Wrap(text, $@"\b{item.price}\s+{Regex.Escape(npc.Currency ?? "gold")}\b", PriceColorHex);
+        }
+        return text;
+    }
+
+    static string Wrap(string text, string pattern, string colorHex)
+        => Regex.Replace(text, pattern, m => $"<color={colorHex}><b>{m.Value}</b></color>", RegexOptions.IgnoreCase);
 
     void OnInputEndEdit(string _)
     {
@@ -76,6 +106,7 @@ public class ChatUI : MonoBehaviour
     }
 
     // ---------- UI construction ----------
+    // Positions are in reference pixels from the bottom of a 1920x1080 screen; the box sits on the counter.
 
     void BuildUI()
     {
@@ -90,36 +121,44 @@ public class ChatUI : MonoBehaviour
         scaler.matchWidthOrHeight = 0.5f;
         var root = canvasGo.transform;
 
-        var background = CreateRect("Background", root, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-        background.gameObject.AddComponent<Image>().color = new Color(0.12f, 0.12f, 0.14f);
+        // Darkens the counter so light text stays readable on the wood.
+        var shade = CreateRect("Shade", root, new Vector2(0, 0), new Vector2(1, 0), Vector2.zero, new Vector2(0, 360));
+        AddImage(shade, new Color(0, 0, 0, 0.45f));
 
-        // Chat log: text is bottom-aligned and overflows upward, the mask hides the oldest lines.
-        var logArea = CreateRect("Log", root, new Vector2(0, 0), new Vector2(1, 1), new Vector2(40, 130), new Vector2(-40, -40));
-        logArea.gameObject.AddComponent<RectMask2D>();
-        logText = CreateText("LogText", logArea, "", TextAnchor.LowerLeft);
-        logText.verticalOverflow = VerticalWrapMode.Overflow;
+        questionText = AddText(Row("Question", root, 1400, 310, 350), 24, MutedColor, TextAnchor.MiddleCenter, FontStyle.Italic);
+        nameText = AddText(Row("Name", root, 600, 262, 314), 44, NameColor, TextAnchor.MiddleCenter);
+        AddImage(Row("Divider", root, 360, 256, 258), GoldColor);
 
-        // Input field
-        var inputRect = CreateRect("Input", root, new Vector2(0, 0), new Vector2(1, 0), new Vector2(40, 30), new Vector2(-260, 100));
-        inputRect.gameObject.AddComponent<Image>().color = new Color(0.22f, 0.22f, 0.25f);
+        replyText = AddText(Row("Reply", root, 1400, 120, 250), 34, ReplyColor, TextAnchor.MiddleCenter);
+        // Long replies shrink instead of spilling out of the box.
+        replyText.resizeTextForBestFit = true;
+        replyText.resizeTextMinSize = 22;
+        replyText.resizeTextMaxSize = 34;
+        // Rich text only here, for our highlight tags. The model's own '<' is removed first (see Sanitize).
+        replyText.supportRichText = true;
+
+        // Input field: invisible background (still clickable), text sits on a thin gold underline.
+        var inputRect = Row("Input", root, 900, 40, 95);
+        AddImage(inputRect, new Color(0, 0, 0, 0));
         inputField = inputRect.gameObject.AddComponent<InputField>();
-        var inputText = CreateText("Text", inputRect, "", TextAnchor.MiddleLeft, 20);
-        inputText.supportRichText = false;
-        var placeholder = CreateText("Placeholder", inputRect, "Ask the shopkeeper...", TextAnchor.MiddleLeft, 20);
-        placeholder.color = new Color(1, 1, 1, 0.35f);
+        var inputText = AddText(Stretch("Text", inputRect), 28, ReplyColor, TextAnchor.MiddleCenter);
+        placeholderText = AddText(Stretch("Placeholder", inputRect), 28, MutedColor, TextAnchor.MiddleCenter, FontStyle.Italic);
         inputField.textComponent = inputText;
-        inputField.placeholder = placeholder;
+        inputField.placeholder = placeholderText;
         inputField.lineType = InputField.LineType.SingleLine;
         inputField.onEndEdit.AddListener(OnInputEndEdit);
+        AddImage(Row("Underline", root, 900, 36, 38), GoldColor);
 
-        // Send button
-        var buttonRect = CreateRect("Send", root, new Vector2(1, 0), new Vector2(1, 0), new Vector2(-240, 30), new Vector2(-40, 100));
-        buttonRect.gameObject.AddComponent<Image>().color = new Color(0.98f, 0.82f, 0.36f);
-        sendButton = buttonRect.gameObject.AddComponent<Button>();
-        var buttonText = CreateText("Text", buttonRect, "Send", TextAnchor.MiddleCenter);
-        buttonText.color = Color.black;
-        sendButton.onClick.AddListener(Send);
+        var hint = CreateRect("Hint", root, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(480, 40), new Vector2(720, 95));
+        AddText(hint, 22, MutedColor, TextAnchor.MiddleLeft).text = "Press [Enter]";
     }
+
+    // A box centred horizontally, between yMin and yMax from the bottom of the screen.
+    static RectTransform Row(string name, Transform parent, float width, float yMin, float yMax)
+        => CreateRect(name, parent, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-width / 2, yMin), new Vector2(width / 2, yMax));
+
+    static RectTransform Stretch(string name, Transform parent)
+        => CreateRect(name, parent, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
 
     static RectTransform CreateRect(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax, Vector2 offsetMin, Vector2 offsetMax)
     {
@@ -132,17 +171,27 @@ public class ChatUI : MonoBehaviour
         return rect;
     }
 
-    Text CreateText(string name, Transform parent, string content, TextAnchor alignment, float padding = 0)
+    static void AddImage(RectTransform rect, Color color)
     {
-        var rect = CreateRect(name, parent, Vector2.zero, Vector2.one, new Vector2(padding, 0), new Vector2(-padding, 0));
+        rect.gameObject.AddComponent<Image>().color = color;
+    }
+
+    Text AddText(RectTransform rect, int size, Color color, TextAnchor alignment, FontStyle style = FontStyle.Normal)
+    {
         var text = rect.gameObject.AddComponent<Text>();
         text.font = font;
-        text.fontSize = FontSize;
-        text.color = Color.white;
+        text.fontSize = size;
+        text.color = color;
+        text.fontStyle = style;
         text.alignment = alignment;
-        text.supportRichText = true;
+        // Player and model text is shown as-is: a stray "<b>" in a reply must not change the formatting.
+        text.supportRichText = false;
         text.horizontalOverflow = HorizontalWrapMode.Wrap;
-        text.text = content;
+        text.verticalOverflow = VerticalWrapMode.Truncate;
+        // A soft shadow keeps text readable on the busy wood texture.
+        var shadow = rect.gameObject.AddComponent<Shadow>();
+        shadow.effectColor = new Color(0, 0, 0, 0.8f);
+        shadow.effectDistance = new Vector2(2, -2);
         return text;
     }
 }

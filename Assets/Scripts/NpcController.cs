@@ -28,18 +28,23 @@ public class NpcController : MonoBehaviour
     LlmClient client;
     PromptBuilder promptBuilder;
     Persona persona;
+    Inventory inventory;
     // Alternating user / assistant messages. This list IS Mira's memory; the API remembers nothing.
     readonly List<ChatMessage> history = new List<ChatMessage>();
 
     public string NpcName { get; private set; } = "NPC";
     public bool IsReady => promptBuilder != null;
+    public string Currency => inventory?.currency;
+
+    // The real item from inventory.json, or null if the model used an id we don't sell.
+    public Item FindItem(string id) => inventory?.items?.FirstOrDefault(i => i.id == id);
 
     void Awake()
     {
         try
         {
             persona = JsonUtility.FromJson<Persona>(personaJson.text);
-            var inventory = JsonUtility.FromJson<Inventory>(inventoryJson.text);
+            inventory = JsonUtility.FromJson<Inventory>(inventoryJson.text);
             promptBuilder = new PromptBuilder(systemPromptTemplate.text, persona, inventory);
             NpcName = persona.name;
         }
