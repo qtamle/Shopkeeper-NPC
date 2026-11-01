@@ -150,7 +150,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62f9055bf4a170048af5625e81f603d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChatUI
-  font: {fileID: 0}
+  font: {fileID: 12800000, guid: af4683e9a61f8654c95d5a120b3fae3e, type: 3}
 --- !u!114 &27947707
 MonoBehaviour:
   m_ObjectHideFlags: 0
