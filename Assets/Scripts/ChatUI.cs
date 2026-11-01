@@ -46,15 +46,15 @@ public class ChatUI : MonoBehaviour
         AddLine($"<b><color=#8ab4f8>You:</color></b> {question}");
         AddLine($"<i><color=#9aa0a6>{npc.NpcName} is thinking...</color></i>");
 
-        LlmResult result = await npc.AskAsync(question);
+        NpcReply reply = await npc.AskAsync(question);
 
         // Play mode may have stopped while we were waiting for the network.
         if (this == null) return;
 
         lines.RemoveAt(lines.Count - 1);
-        AddLine(result.ok
-            ? $"<b><color=#fdd663>{npc.NpcName}:</color></b> {result.text}"
-            : $"<color=#f28b82>(error: {result.error})</color>");
+        // Fallback lines are greyed out only to help us spot them while testing.
+        string nameColor = reply.isFallback ? "#9aa0a6" : "#fdd663";
+        AddLine($"<b><color={nameColor}>{npc.NpcName}:</color></b> {reply.text}");
 
         busy = false;
         sendButton.interactable = true;

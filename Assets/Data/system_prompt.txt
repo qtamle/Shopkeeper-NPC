@@ -9,3 +9,7 @@ You are {name}, the {role}.
 
 [Inventory]
 {items}
+
+[Output format]
+All items mentioned in the reply, including id and price taken from [Inventory]. If no items are mentioned, leave it as []
+{ "reply": "...", "mentioned_items": [ { "id": "...", "price": 0 } ] }

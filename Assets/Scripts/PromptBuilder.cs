@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 
 // Turns persona + inventory + the player's message into the messages array for the LLM.
@@ -22,10 +23,12 @@ public class PromptBuilder
 
     public string SystemPrompt => systemPrompt;
 
-    // M2: only the current question is sent, so Mira has no memory yet. History comes in M3.
-    public ChatMessage[] Build(string playerMessage) => new[]
+    // The API is stateless: every request = system prompt + past turns + the new question.
+    public ChatMessage[] Build(IEnumerable<ChatMessage> history, string playerMessage)
     {
-        new ChatMessage("system", systemPrompt),
-        new ChatMessage("user", playerMessage),
-    };
+        var messages = new List<ChatMessage> { new ChatMessage("system", systemPrompt) };
+        messages.AddRange(history);
+        messages.Add(new ChatMessage("user", playerMessage));
+        return messages.ToArray();
+    }
 }

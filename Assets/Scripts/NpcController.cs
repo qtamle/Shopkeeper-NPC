@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
 
-// Runs one NPC turn. M2: prompt → LLM → reply. Checking, retry and fallback are added in M5–M6.
+// Runs one NPC turn: prompt (with history) → LLM → parse JSON → reply or fallback. Checking and retry come in M5–M6.
 public class NpcController : MonoBehaviour
 {
     [Header("LLM")]
@@ -15,8 +17,19 @@ public class NpcController : MonoBehaviour
     [SerializeField] TextAsset inventoryJson;
     [SerializeField] TextAsset systemPromptTemplate;
 
+    [Header("Memory")]
+    [Tooltip("How many past player+NPC exchanges are re-sent with each request.")]
+    [SerializeField, Min(0)] int historyTurns = 6;
+
+    [Header("Debug")]
+    [Tooltip("Print every message sent in each request, to see what the model actually receives.")]
+    [SerializeField] bool logRequestMessages = true;
+
     LlmClient client;
     PromptBuilder promptBuilder;
+    Persona persona;
+    // Alternating user / assistant messages. This list IS Mira's memory; the API remembers nothing.
+    readonly List<ChatMessage> history = new List<ChatMessage>();
 
     public string NpcName { get; private set; } = "NPC";
     public bool IsReady => promptBuilder != null;
@@ -25,7 +38,7 @@ public class NpcController : MonoBehaviour
     {
         try
         {
-            var persona = JsonUtility.FromJson<Persona>(personaJson.text);
+            persona = JsonUtility.FromJson<Persona>(personaJson.text);
             var inventory = JsonUtility.FromJson<Inventory>(inventoryJson.text);
             promptBuilder = new PromptBuilder(systemPromptTemplate.text, persona, inventory);
             NpcName = persona.name;
@@ -41,20 +54,57 @@ public class NpcController : MonoBehaviour
         Debug.Log("[NPC] System prompt:\n" + promptBuilder.SystemPrompt);
     }
 
-    public async Task<LlmResult> AskAsync(string playerMessage)
+    public async Task<NpcReply> AskAsync(string playerMessage)
     {
         if (!IsReady)
-            return LlmResult.Fail("NPC data is not loaded.", 0);
+            return Fallback("NPC data is not loaded.");
 
-        ChatMessage[] messages = promptBuilder.Build(playerMessage);
-        LlmResult result = await client.SendAsync(messages, temperature);
+        ChatMessage[] messages = promptBuilder.Build(history, playerMessage);
+        if (logRequestMessages)
+            Debug.Log($"[NPC] Request with {messages.Length} messages:\n" +
+                      string.Join("\n", messages.Select((m, i) => $"#{i} [{m.role}] {Preview(m.content)}")));
 
-        if (result.ok)
-            Debug.Log($"[NPC] ({result.latencyMs} ms) {result.text}");
-        else
-            Debug.LogError($"[NPC] Failed after {result.latencyMs} ms: {result.error}");
+        LlmResult result = await client.SendAsync(messages, temperature, jsonMode: true);
 
-        return result;
+        if (!result.ok)
+            return Fallback($"LLM call failed after {result.latencyMs} ms: {result.error}");
+
+        if (!GeneratorOutput.TryParse(result.text, out var output, out string parseError))
+            return Fallback($"{parseError} Raw output: {result.text}");
+
+        Debug.Log($"[NPC] ({result.latencyMs} ms, {messages.Length} messages) reply: {output.reply}\n" +
+                  $"mentioned_items: {string.Join(", ", output.mentioned_items.Select(i => $"{i.id}={i.price}"))}");
+
+        // Store the raw JSON, not just the reply: the model copies the format of its own past answers.
+        // Failed turns are not stored, so one broken answer can't teach the model a broken format.
+        history.Add(new ChatMessage("user", playerMessage));
+        history.Add(new ChatMessage("assistant", result.text));
+        TrimHistory();
+
+        return new NpcReply { text = output.reply, output = output };
+    }
+
+    // First 80 characters on one line, so a long system prompt doesn't flood the Console.
+    static string Preview(string s)
+    {
+        string oneLine = s.Replace("\n", " ");
+        return oneLine.Length <= 80 ? oneLine : oneLine.Substring(0, 80) + $"... ({s.Length} chars)";
+    }
+
+    void TrimHistory()
+    {
+        int maxMessages = historyTurns * 2;
+        if (history.Count > maxMessages)
+            history.RemoveRange(0, history.Count - maxMessages);
+    }
+
+    NpcReply Fallback(string reason)
+    {
+        Debug.LogError("[NPC] Using fallback line. " + reason);
+        string line = string.IsNullOrWhiteSpace(persona?.fallback_line)
+            ? "(fallback_line is empty in persona.json)"
+            : persona.fallback_line;
+        return new NpcReply { text = line, isFallback = true };
     }
 
 #if UNITY_EDITOR

@@ -21,7 +21,7 @@ public class LlmClient
         this.timeoutSeconds = timeoutSeconds;
     }
 
-    public async Task<LlmResult> SendAsync(ChatMessage[] messages, float temperature)
+    public async Task<LlmResult> SendAsync(ChatMessage[] messages, float temperature, bool jsonMode = false)
     {
         var timer = Stopwatch.StartNew();
 
@@ -30,7 +30,14 @@ public class LlmClient
         if (string.IsNullOrEmpty(apiKey))
             return LlmResult.Fail($"{ApiKeyEnvVar} is not set. Set it, then restart Unity Hub.", 0);
 
-        var body = new ChatRequest { model = model, messages = messages, temperature = temperature };
+        var body = new ChatRequest
+        {
+            model = model,
+            messages = messages,
+            temperature = temperature,
+            // Always set: JsonUtility can't skip a null field, it would send an empty object instead.
+            response_format = new ResponseFormat { type = jsonMode ? "json_object" : "text" },
+        };
         byte[] json = Encoding.UTF8.GetBytes(JsonUtility.ToJson(body));
 
         using var request = new UnityWebRequest(endpoint, "POST");

@@ -26,6 +26,14 @@ public class ChatRequest
     public ChatMessage[] messages;
     // 0 = most predictable, higher = more varied wording.
     public float temperature;
+    public ResponseFormat response_format;
+}
+
+[Serializable]
+public class ResponseFormat
+{
+    // "text" = free text. "json_object" = the API forces valid JSON (but not our exact fields).
+    public string type;
 }
 
 [Serializable]

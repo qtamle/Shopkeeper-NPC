@@ -119,6 +119,71 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &27947705
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 27947708}
+  - component: {fileID: 27947707}
+  - component: {fileID: 27947706}
+  m_Layer: 0
+  m_Name: Mira
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &27947706
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 27947705}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62f9055bf4a170048af5625e81f603d6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ChatUI
+--- !u!114 &27947707
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 27947705}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c692153cf61a393479e085a25fc47dcd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcController
+  endpoint: https://generativelanguage.googleapis.com/v1beta/openai/chat/completions
+  model: gemini-3.5-flash-lite
+  temperature: 0.7
+  personaJson: {fileID: 4900000, guid: d1a2fa40f5ad2a54a983401aa6423913, type: 3}
+  inventoryJson: {fileID: 4900000, guid: 542fdbd264ee07346a580f9794ab8a83, type: 3}
+  systemPromptTemplate: {fileID: 4900000, guid: ce872a24dcfc4f4408cccad30fb1d95a, type: 3}
+  historyTurns: 6
+  logRequestMessages: 1
+--- !u!4 &27947708
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 27947705}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &497372300
 GameObject:
   m_ObjectHideFlags: 0
@@ -130,7 +195,7 @@ GameObject:
   - component: {fileID: 497372302}
   - component: {fileID: 497372301}
   m_Layer: 0
-  m_Name: GameObject
+  m_Name: SmokeTest
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -149,7 +214,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LlmSmokeTest
   endpoint: https://generativelanguage.googleapis.com/v1beta/openai/chat/completions
-  model: abc-xyz
+  model: gemini-3.5-flash-lite
   temperature: 0.7
   systemPrompt: You are a helpful assistant. Answer in one short sentence.
   userPrompt: Say hello to a Unity developer.
@@ -266,3 +331,4 @@ SceneRoots:
   m_Roots:
   - {fileID: 519420032}
   - {fileID: 497372302}
+  - {fileID: 27947708}
