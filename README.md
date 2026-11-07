@@ -4,9 +4,9 @@ An NPC in Unity (C#) that talks to players in character, powered by an LLM. Mira
 
 ## Demo
 
-[![Mira answering a shopper in Unity. Click to watch the demo video.](docs/demo_thumbnail.png)](docs/mira_demo.mp4)
+https://github.com/user-attachments/assets/4cbb0f2c-fe8a-4163-a409-387d4758ddc5
 
-**[▶ Watch the demo video (26 s)](docs/mira_demo.mp4)**
+
 
 The questions in the video are typed by a script. Every reply is a live LLM response.
 
