@@ -14,6 +14,7 @@ public class ChatUI : MonoBehaviour
     static readonly Color NameColor = new Color(0.96f, 0.89f, 0.74f);
     static readonly Color ReplyColor = new Color(0.98f, 0.96f, 0.92f);
     static readonly Color MutedColor = new Color(0.68f, 0.64f, 0.60f);
+    static readonly Color QuestionColor = new Color(0.88f, 0.84f, 0.78f);
     static readonly Color GoldColor = new Color(0.78f, 0.62f, 0.38f, 0.8f);
     const string ItemColorHex = "#ffcf70";
     const string PriceColorHex = "#9be3a8";
@@ -125,8 +126,10 @@ public class ChatUI : MonoBehaviour
         var shade = CreateRect("Shade", root, new Vector2(0, 0), new Vector2(1, 0), Vector2.zero, new Vector2(0, 360));
         AddImage(shade, new Color(0, 0, 0, 0.45f));
 
-        questionText = AddText(Row("Question", root, 1400, 310, 350), 24, MutedColor, TextAnchor.MiddleCenter, FontStyle.Italic);
+        questionText = AddText(Row("Question", root, 1400, 310, 350), 28, QuestionColor, TextAnchor.MiddleCenter, FontStyle.Italic);
         nameText = AddText(Row("Name", root, 600, 262, 314), 44, NameColor, TextAnchor.MiddleCenter);
+        // Truncate hides a line taller than its box, and a serif font's line height at this size is taller than 52.
+        nameText.verticalOverflow = VerticalWrapMode.Overflow;
         AddImage(Row("Divider", root, 360, 256, 258), GoldColor);
 
         replyText = AddText(Row("Reply", root, 1400, 120, 250), 34, ReplyColor, TextAnchor.MiddleCenter);
