@@ -133,7 +133,7 @@ Run it twice: **baseline** (generator only) and **with checker**. Record both.
 - [x] **M1 · Oct 30**: key set in `LLM_API_KEY`; one request sent from Unity; reply printed in the Console
 - [x] **M2 · Oct 31 – Nov 1**: `persona.json`, `inventory.json`, `PromptBuilder`, chat UI; can chat with Mira in Play mode
 - [x] **M3 · Nov 2**: history of the last 6 turns; generator returns JSON and it is parsed
-- [ ] **M4 · Nov 3**: README v1 and a 30-second video, pushed to GitHub
+- [x] **M4 · Nov 3**: README v1 and a 30-second video, pushed to GitHub
 - [ ] **Nov 4 – 8**: fill in the CV, write the two essays, submit the form
 
 ### Phase B: interview-ready (Nov 9 – 22)
@@ -154,4 +154,4 @@ Run it twice: **baseline** (generator only) and **with checker**. Record both.
 | --- | --- | --- | --- |
 | 2026-10-29 | Plan created | — | M1 |
 | 2026-11-01 | Unity 2D project created (6000.3.15f1). M1 done: `LlmClient` reply in Console with `gemini-3.5-flash-lite` (~0.9 s). `gemini-3.8-flash` timed out (>120 s), `gemini-2.5-flash` returns 404, `gemini-3.5-flash` ~4 s (thinking tokens). M2 done: chat with Mira in Play mode (UI built in code); 6 items moved into `inventory.json`, `system_prompt.txt` uses placeholders. Without the item list the model invented items (grounding). Without history Mira forgets the player's name (stateless). M3 done (a day early): last 6 turns re-sent (system prompt kept separate at #0), `json_object` mode + safe `TryParse`, `fallback_line` shown on any failure (tested with a bad model name). Prompt-only JSON came wrapped in ```json fences | — | M4: README v1 + 30 s video, push |
-| 2026-11-07 | Demo video recorded with Unity Recorder (`Recordings/mira_demo.mp4`, ~26 s, real LLM replies, questions typed by a temporary script that was then removed). Take used `gemini-3.5-flash-lite` (~1 s) because `gemini-3.5-flash` gave 503, 15 s and a 30 s timeout. Fixed in `ChatUI`: NPC name was hidden by `Truncate` with the serif font; question line made easier to read | Video not uploaded yet; 4 check questions unanswered | Upload the video, README v1, push, tick M4, then submit the form |
+| 2026-11-07 | Demo video recorded with Unity Recorder (`Recordings/mira_demo.mp4`, ~26 s, real LLM replies, questions typed by a temporary script that was then removed). Take used `gemini-3.5-flash-lite` (~1 s) because `gemini-3.5-flash` gave 503, 15 s and a 30 s timeout. Fixed in `ChatUI`: NPC name was hidden by `Truncate` with the serif font; question line made easier to read. M4 done: README v1 and video pushed (`c2405b8`) | Repo is still private, so outsiders cannot open it | Make the repo public, submit the form. At M5, decide how haggled prices pass the price check |
